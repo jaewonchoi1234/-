@@ -7,60 +7,83 @@ from datetime import datetime
 import queue
 import os
 import telnetlib3
-import asyncio
 import asyncssh
+import pandas as pd
 
-
-def extract_ssh_info(file_path):
+def extract_host_info(file_path):
     host = None
-    port = None
-    protocol = None
-    with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+    with open(file_path, 'r', encoding='utf-8') as f:
         for line in f:
 
             if 'S:"Hostname"' in line:
                 host = line.split('=')[1].strip()
+    return host
 
-            elif 'D:"[SSH2] Port"' in line:
-                hex_port = line.split('=')[1].strip()
-                port = int(hex_port, 16)   # hex → decimal 변환
-
-            elif 'D:"Port"' in line:
-                hex_port = line.split('=')[1].strip()
-                port = int(hex_port, 16)   # hex → decimal 변환
-
-            elif 'S:"Protocol Name"' in line:
-                protocol = line.split('=')[1].strip()
-
-    return host, port, protocol
-
-def extract_ssh_session(file_path):
-
-    session =[]
-
-    queue1 = queue.Queue()
-
-    list1 = os.listdir(file_path)
-    for file in list1:
-        if file.endswith(".ini")and file!="__FolderData__.ini" and "자산아님" not in file:
-            host,port,protocol=extract_ssh_info(file_path+'\\'+file)
-            standpoint = {'host': host, 'port': port, 'protocol': protocol}
-            session.append(standpoint)
-        elif not file.endswith(".ini"):
-            queue1.put(file)
-
-    while queue1.qsize() > 0:
-        mother = queue1.get()
-        list2 = os.listdir(file_path+'\\'+mother)
-        for file in list2:
+def explore_ini(file_path, q, session):
+        list1 = os.listdir(file_path)
+        for file in list1:
+            path =file_path+'\\'+file
             if file.endswith(".ini") and file!="__FolderData__.ini" and "자산아님" not in file:
-                host, port,protocol = extract_ssh_info(file_path + '\\' +mother +'\\'+file)
-                standpoint = {'host': host, 'port': port, 'protocol': protocol}
-                session.append(standpoint)
-            elif not file.endswith(".ini"):
-                queue1.put(mother+"\\"+file)
+                host=extract_ssh_info(path)
+                session.append(host)
+            elif os.path.isdir(path):
+                q.put(file)
+        return q
+
+
+def get_session_from_ini(file_path):
+    session =[]
+    queue1 = queue.Queue()
+    
+    explore_ini(file_path,session, queue1)
+    while queue1.qsize() > 0:
+        parent_file_path = file_path+ "\\"+queue1.get()
+        explore_ini(parent_file_path,session, queue1)
+
 
     return session
+
+
+def make_csv_session(session):
+    data = {'host': session}
+    df = pd.DataFrame(data)
+    df.to_csv('./hostInfo.csv')
+
+
+
+
+def get_session_from_csv(filename):
+    df = pd.read_csv(filename)
+    return df['host']
+
+def connect_ssh(df):
+    
+
+
+def parse_result():
+
+
+
+def make_logfile():
+
+
+
+def check_hardware():
+
+
+
+def print_log():
+
+
+
+def compare_result():
+
+
+
+def make_report():
+
+
+
 
 
 def remoteInspection(session):
