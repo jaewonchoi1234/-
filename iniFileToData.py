@@ -1,65 +1,55 @@
-
-
 import os
-
-
-
-def extract_ssh_info(file_path):
-    host = None
-    port = None
-
-    with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-        for line in f:
-
-            if 'S:"Hostname"' in line:
-                host = line.split('=')[1].strip()
-
-            elif 'D:"[SSH2] Port"' in line:
-                hex_port = line.split('=')[1].strip()
-                port = int(hex_port, 16)   # hex → decimal 변환
-
-            elif 'D:"Port"' in line:
-                hex_port = line.split('=')[1].strip()
-                port = int(hex_port, 16)   # hex → decimal 변환
-
-    return host, port
-
+import pandas as pd
 import queue
 
-path = "C:\\Users\\qwasz\\OneDrive\\pc_backup\\Config\\Sessions\\내 담당 원격점검 사이트 세션\\16. 화승인도네시아\\03"
 
-session =[]
+#ini파일에서 host 추출
+def extract_host_info(file_path):
+    host = None
+    with open(file_path, 'r', encoding='utf-8') as f:
+        for line in f:
+            if 'S:"Hostname"' in line:
+                host = line.split('=')[1].strip()
+    return host
 
-queue1 = queue.Queue()
+#디렉토리에서 ini파일 탐색
+def explore_ini(file_path, q, session):
+        list1 = os.listdir(file_path)
+        for file in list1:
+            path =file_path+'\\'+file
+            if file.endswith(".ini") and file!="__FolderData__.ini" and "자산아님" not in file:
+                host=extract_host_info(path)
+                session.append(host)
+            elif os.path.isdir(path):
+                q.put(file)
+        return q
 
-list1 = os.listdir(path)
-for file in list1:
-    if file.endswith(".ini")and file!="__FolderData__.ini" and "자산아님" not in file:
-        host,port=extract_ssh_info(path+'\\'+file)
-        standpoint = {'host': host, 'port': port}
-        session.append(standpoint)
-    elif not file.endswith(".ini"):
-        queue1.put(file)
-
-while queue1.qsize() > 0:
-    mother = queue1.get()
-    list2 = os.listdir(path+'\\'+mother)
-    for file in list2:
-        if file.endswith(".ini") and file!="__FolderData__.ini" and "자산아님" not in file:
-            host, port = extract_ssh_info(path + '\\' +mother +'\\'+file)
-            standpoint = {'host': host, 'port': port}
-            session.append(standpoint)
-        elif not file.endswith(".ini"):
-            queue1.put(mother+"\\"+file)
-
-
-print(len(session))
-
-
-print(session)
-
-
+#ini 파일에서 세션 가져오기
+def get_session_from_ini(file_path):
+    session =[]
+    queue1 = queue.Queue()
+    
+    explore_ini(file_path,session, queue1)
+    while queue1.qsize() > 0:
+        parent_file_path = file_path+ "\\"+queue1.get()
+        explore_ini(parent_file_path,session, queue1)    
 
 
+    return session
 
 
+#csv 세션 파일 만들기
+def make_csv_session(session, file_name):
+    data = {'host': session}
+    df = pd.DataFrame(data)
+    os.makedirs("./csv", exist_ok=True)
+    if os.path.exists("./csv/"+file_name):
+        raise FileExistsError(f"{file_name}은 이미 존재합니다.")
+    df.to_csv('./csv/'+file_name+'.csv')
+
+
+
+file_name = ""
+file_path = ""
+session = get_session_from_ini(file_path)
+make_csv_session(session, file_name)

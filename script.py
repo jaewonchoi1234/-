@@ -1,57 +1,12 @@
-# 샘플 Python 스크립트입니다.
-
-# Shift+F10을(를) 눌러 실행하거나 내 코드로 바꿉니다.
-# 클래스, 파일, 도구 창, 액션 및 설정을 어디서나 검색하려면 Shift 두 번을(를) 누릅니다.
-
 from datetime import datetime
 import queue
 import os
-import telnetlib3
 import asyncssh
 import pandas as pd
 
-def extract_host_info(file_path):
-    host = None
-    with open(file_path, 'r', encoding='utf-8') as f:
-        for line in f:
-
-            if 'S:"Hostname"' in line:
-                host = line.split('=')[1].strip()
-    return host
-
-def explore_ini(file_path, q, session):
-        list1 = os.listdir(file_path)
-        for file in list1:
-            path =file_path+'\\'+file
-            if file.endswith(".ini") and file!="__FolderData__.ini" and "자산아님" not in file:
-                host=extract_ssh_info(path)
-                session.append(host)
-            elif os.path.isdir(path):
-                q.put(file)
-        return q
 
 
-def get_session_from_ini(file_path):
-    session =[]
-    queue1 = queue.Queue()
-    
-    explore_ini(file_path,session, queue1)
-    while queue1.qsize() > 0:
-        parent_file_path = file_path+ "\\"+queue1.get()
-        explore_ini(parent_file_path,session, queue1)
-
-
-    return session
-
-
-def make_csv_session(session):
-    data = {'host': session}
-    df = pd.DataFrame(data)
-    df.to_csv('./hostInfo.csv')
-
-
-
-
+#세션 가져오기 csv
 def get_session_from_csv(filename):
     df = pd.read_csv(filename)
     return df['host']
