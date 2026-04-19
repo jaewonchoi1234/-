@@ -1,22 +1,47 @@
 from datetime import datetime
-import queue
 import os
 import asyncssh
 import pandas as pd
+import asyncio
+import sys
 
 
+def get_command_from_txt(path):
+    commands=[]
+    with open(path,'r',encoding="utf-8") as f:
+        lines = f.readlines
+        for line in lines:
+            commands.append(line.strip())
+    return commands
+        
 
 #세션 가져오기 csv
 def get_session_from_csv(filename):
     df = pd.read_csv(filename)
-    return df['host']
-
-def connect_ssh(df):
-    
+    return df['host'].tolist()
 
 
-def parse_result():
+async def run_client(host,commands):
+    result = []
+    async with asyncssh.connect(host) as conn:
+        for command in commands:
+            result.append(await conn.run(command))
+        return result
 
+
+async def run_clients(session,commands):
+    results = []
+    for host in session:
+       try:
+            asyncio.get_event_loop().run_until_complete(run_client())
+       except (OSError, asyncssh.Error) as exc:
+            sys.exit('SSH connection failed: ' + str(exc))
+       await results.append(run_client(host,commands))
+    return results
+
+
+def parse_result(result):
+    result.stdout
 
 
 def make_logfile():
@@ -31,7 +56,7 @@ def print_log():
 
 
 
-def compare_result():
+def compare_config():
 
 
 
@@ -77,8 +102,7 @@ def remoteInspection(session):
             file = open("./logs/"+today+'/'+file_name,'w')
 
             # ssh 명령어 입력 및 결과값 파일에 쓰기
-            command = ['sh process cpu','sh process m','sh mac add','sh cdp nei','sh cdp nei de','sh arp','sh span','sh ip int bri','sh ip route','sh ip route sum','dir','sh etherch sum'
-                      ,'sh inter status','sh inter count','sh inter count error','sh run','sh clock','sh log','sh ver','sh env all','sh clock','sh int status | inc err']
+            
             for command in command:
                 stdin, stdout, stderr = client.exec_command(command)
                 text = stdout.read().decode('utf-8')
@@ -89,7 +113,8 @@ def remoteInspection(session):
 
 
 if __name__ == '__main__':
-    path = "C:\\Users\\qwasz\\OneDrive\\pc_backup\\Config\\Sessions\\내 담당 원격점검 사이트 세션\\16. 화승인도네시아\\03"
-    session=extract_ssh_session(path)
-    remoteInspection(session)
+    commands = get_command_from_txt('command')
+    session = get_session_from_csv('csv/tata_csv')
+    results = run_clients(session,commands)
+
 

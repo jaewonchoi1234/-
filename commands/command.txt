@@ -1,0 +1,24 @@
+ter len 0
+sh process cpu
+sh process m
+sh mac add
+sh mac-add
+sh cdp nei
+sh cdp nei de
+sh arp
+sh span
+sh ip int bri
+sh ip route
+sh ip route sum
+dir
+sh etherch sum
+sh inter status
+sh inter count error
+sh run
+sh clock
+sh log
+sh ver
+sh env all
+sh clock
+sh int status | inc err
+wr
